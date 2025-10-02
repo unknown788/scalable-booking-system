@@ -20,9 +20,16 @@ app = FastAPI(title=settings.PROJECT_NAME)
 Instrumentator().instrument(app).expose(app)
 
 # 2. Add the CORS middleware
+origins = [
+    "http://localhost:3000",
+    "https://404by.me", # <--- ADD YOUR LIVE DOMAIN HERE
+]
+
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Allows your frontend to make requests
+    allow_origins=origins,  # Allows your frontend to make requests
     allow_credentials=True,
     allow_methods=["*"], # Allows all methods (GET, POST, etc.)
     allow_headers=["*"], # Allows all headers
