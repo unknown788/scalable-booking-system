@@ -7,8 +7,8 @@ from passlib.context import CryptContext
 from app.core.config import settings
 from app.models import User
 
-pwd_context = CryptContext(
-    schemes=["bcrypt"], deprecated="auto", bcrypt__default_rounds=12)
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+
 
 ALGORITHM = settings.ALGORITHM
 SECRET_KEY = settings.SECRET_KEY

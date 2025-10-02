@@ -1,11 +1,23 @@
 
 # app/main.py
+import sys
+from loguru import logger
+from prometheus_fastapi_instrumentator import Instrumentator
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
 from app.core.config import settings
 from app.api.v1.api import api_router
 
+# Configure Loguru for structured JSON logging
+logger.remove()
+logger.add(sys.stdout, serialize=True, enqueue=True)
+
+
 app = FastAPI(title=settings.PROJECT_NAME)
+
+
+Instrumentator().instrument(app).expose(app)
 
 # 2. Add the CORS middleware
 app.add_middleware(

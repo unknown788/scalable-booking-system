@@ -1,3 +1,10 @@
+import redis
+import json
+from app.core.config import settings
+from app.db.cache import redis_client
+from app.services import cache_service
+from app import schemas
+
 from sqlalchemy.orm import Session, joinedload
 from datetime import datetime
 from typing import Optional, List
@@ -7,8 +14,9 @@ from app.schemas.event import VenueCreate, EventCreate
 from app.models.event import Venue, Event, Seat
 from app.models.booking import Ticket
 
-# CRUD for Venue
+redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
 
+# CRUD for Venue
 
 def create_venue(db: Session, *, venue_in: VenueCreate) -> Venue:
     db_venue = Venue(name=venue_in.name, rows=venue_in.rows, cols=venue_in.cols)
@@ -32,11 +40,14 @@ def create_venue(db: Session, *, venue_in: VenueCreate) -> Venue:
 
 
 def create_event(db: Session, *, event_in: EventCreate, organizer_id: int) -> Event:
-    # Create a dictionary from the pydantic model and add the organizer_id
     db_event = Event(**event_in.model_dump(), organizer_id=organizer_id)
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
+
+    # When a new event is created, the list of all events is now outdated.
+    cache_service.delete_from_cache("events_list")
+
     return db_event
 
 
@@ -78,9 +89,19 @@ def get_event(db: Session, event_id: int) -> Optional[Event]:
 
 
 def get_events(db: Session, skip: int = 0, limit: int = 100) -> List[Event]:
-    # Filter for events that haven't happened yet and order them
-    return (
+    # For simplicity, we'll only cache the default first page of events
+    if skip == 0 and limit == 100:
+        cache_key = "events_list"
+        cached_data = cache_service.get_from_cache(cache_key)
+        if cached_data:
+            # Pydantic can re-create the models from the list of dicts
+            return cached_data
+
+    # If miss, get from DB
+    events = (
         db.query(Event)
+        # Eager load venue to prevent N+1 queries
+        .options(joinedload(Event.venue))
         .filter(Event.event_time >= datetime.utcnow())
         .order_by(Event.event_time)
         .offset(skip)
@@ -88,32 +109,59 @@ def get_events(db: Session, skip: int = 0, limit: int = 100) -> List[Event]:
         .all()
     )
 
+    if skip == 0 and limit == 100:
+        # Pydantic models need to be converted to dicts for JSON serialization
+        # This is a good place to use a schema for serialization
+        events_dicts = [schemas.Event.from_orm(e).dict() for e in events]
+        cache_service.set_to_cache(
+            "events_list", events_dicts, ex=60)  # 1-minute cache
+
+    return events
+
+
 # CRUD for getting event availability
 
 
-def get_event_availability(db: Session, event_id: int) -> dict:
+def get_event_availability(db: Session, event_id: int) -> Optional[dict]:
+    cache_key = f"availability:{event_id}"
+
+    # 1. Try to get from cache first
+    cached_data = cache_service.get_from_cache(cache_key)
+    if cached_data:
+        return cached_data
+
+    # 2. If miss, get from DB (same logic as before)
     event = get_event(db=db, event_id=event_id)
     if not event:
         return None
 
-    # 1. Get all seats for the event's venue
     all_seats = db.query(Seat).filter(Seat.venue_id == event.venue_id).all()
+    booked_ticket_query = db.query(Ticket.seat_id).filter(
+        Ticket.event_id == event_id)
+    booked_seat_ids = {seat_id for seat_id, in booked_ticket_query}
 
-    # 2. Get all seat IDs that have been booked for this specific event
-    booked_seat_ids = {
-        ticket.seat_id for ticket in db.query(Ticket).filter(Ticket.event_id == event_id).all()
-    }
-
-    # 3. Differentiate between available and booked seats
     available_seats_list = [
         seat for seat in all_seats if seat.id not in booked_seat_ids]
     booked_seats_list = [
         seat for seat in all_seats if seat.id in booked_seat_ids]
 
-    return {
+    # THE CRITICAL STEP: Convert SQLAlchemy objects to dictionaries before caching
+    # This ensures the data is in a simple, JSON-serializable format.
+    available_seats_dicts = [{"id": s.id, "row": s.row,
+                              "number": s.number} for s in available_seats_list]
+    booked_seats_dicts = [{"id": s.id, "row": s.row,
+                           "number": s.number} for s in booked_seats_list]
+
+    availability_data = {
         "total_seats": len(all_seats),
         "available_seats": len(available_seats_list),
         "booked_seats": len(booked_seats_list),
-        "available": available_seats_list,
-        "booked": booked_seats_list,
+        "available": available_seats_dicts,
+        "booked": booked_seats_dicts,
     }
+
+    # 3. Store the clean, serializable data in the cache
+    cache_service.set_to_cache(
+        cache_key, availability_data, ex=300)  # 5-minute cache
+
+    return availability_data

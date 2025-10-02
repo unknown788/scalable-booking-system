@@ -1,9 +1,14 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
+from loguru import logger 
+from app.db.cache import redis_client  
+from app.services import cache_service  # Import cache service
+
+from app.worker import send_booking_confirmation
 
 from app import models, schemas
-from app.crud import crud_event
+from app.crud import crud_event, crud_user
 
 
 def create_new_booking(
@@ -20,6 +25,8 @@ def create_new_booking(
     # For now, let's set a static price. You could extend this to be dynamic.
     ticket_price = 150.00
 
+
+    user = crud_user.get_user(db, user_id=user_id)
     # We use a transaction to ensure atomicity
     try:
         # 1. Create the parent Booking record
@@ -40,11 +47,19 @@ def create_new_booking(
         # 3. Commit the transaction
         db.commit()
         db.refresh(db_booking)
+
+
+        cache_service.delete_from_cache(f"availability:{booking_in.event_id}")
+
+        send_booking_confirmation.delay(db_booking.id, user.email)
         return db_booking
 
     except IntegrityError:
         # This block executes if the UniqueConstraint on (event_id, seat_id) fails
         db.rollback()
+        logger.warning(
+            f"Booking conflict for event {booking_in.event_id} and seats {booking_in.seat_ids}")
+
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="One or more of the selected seats are already booked.",
