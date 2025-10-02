@@ -6,7 +6,7 @@ from app.services import cache_service
 from app import schemas
 
 from sqlalchemy.orm import Session, joinedload
-from datetime import datetime, timezone
+from datetime import datetime, timezone, time
 from typing import Optional, List
 
 from app.models.event import Venue, Event
@@ -89,6 +89,12 @@ def get_event(db: Session, event_id: int) -> Optional[Event]:
 
 
 def get_events(db: Session, skip: int = 0, limit: int = 100) -> List[Event]:
+    # Get the current date in UTC
+    today_utc = datetime.now(timezone.utc).date()
+    # Get the moment the current UTC day started
+    start_of_today_utc = datetime.combine(
+        today_utc, time.min, tzinfo=timezone.utc)
+
     # For simplicity, we'll only cache the default first page of events
     if skip == 0 and limit == 100:
         cache_key = "events_list"
@@ -102,7 +108,7 @@ def get_events(db: Session, skip: int = 0, limit: int = 100) -> List[Event]:
         db.query(Event)
         # Eager load venue to prevent N+1 queries
         .options(joinedload(Event.venue))
-        .filter(Event.event_time >= datetime.now(timezone.utc))
+        .filter(Event.event_time >= start_of_today_utc)
         .order_by(Event.event_time)
         .offset(skip)
         .limit(limit)
