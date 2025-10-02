@@ -1,11 +1,16 @@
 # app/db/cache.py
+import ssl
 import redis
 from app.core.config import settings
 
-# This is the new, unified connection logic.
-# The Redis.from_url() function is smart enough to parse the ssl_cert_reqs
-# parameter from the URL if it exists, satisfying both Celery and our app.
+redis_url = settings.REDIS_URL
+ssl_kwargs = {}
+
+if redis_url.startswith("rediss://"):
+    ssl_kwargs['ssl_cert_reqs'] = ssl.CERT_NONE
+
 redis_client = redis.Redis.from_url(
-    settings.REDIS_URL,
+    redis_url,
     decode_responses=True,
+    **ssl_kwargs
 )
