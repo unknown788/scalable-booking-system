@@ -53,3 +53,7 @@ build/
 .eggs/
 
 *.log
+
+# Virtual environment
+venv/
+.env
