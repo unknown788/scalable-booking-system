@@ -1,10 +1,20 @@
 
 # app/main.py
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware  
 from app.core.config import settings
 from app.api.v1.api import api_router
 
 app = FastAPI(title=settings.PROJECT_NAME)
+
+# 2. Add the CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"], # Allows your frontend to make requests
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"], # Allows all headers
+)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 

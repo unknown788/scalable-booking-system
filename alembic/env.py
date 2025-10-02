@@ -1,3 +1,4 @@
+import app.models
 import sys
 from pathlib import Path
 
@@ -5,11 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
-
 from app.db.base_class import Base
-from app.models.user import User
-from app.models.event import Event, Venue, Seat
-from app.models.booking import Booking, Ticket
 
 
 from logging.config import fileConfig

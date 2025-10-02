@@ -17,6 +17,10 @@ class Event(Base):
     
     venue_id = Column(Integer, ForeignKey("venue.id"))
     venue = relationship("Venue", back_populates="events")
+
+    organizer_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    organizer = relationship("User")
+
     tickets = relationship("Ticket", back_populates="event")
 
 
