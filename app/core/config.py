@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     RABBITMQ_URL: str
     REDIS_URL: str
+    ENVIRONMENT: str = "development"
 
 
     class Config:
