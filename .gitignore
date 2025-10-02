@@ -36,7 +36,6 @@ coverage.xml
 *.pid
 *.seed
 *.pid.lock
-docker-compose.override.yml
 
 # OS specific
 .DS_Store
@@ -53,6 +52,4 @@ dist/
 build/
 .eggs/
 
-# Heroku
 *.log
-.heroku/
