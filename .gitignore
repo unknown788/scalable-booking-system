@@ -1,1 +1,58 @@
-temp.txt
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Virtual environment
+venv/
+.env
+*.env
+.env.*
+
+# Byte-compiled / optimized files
+*.py[cod]
+*$py.class
+
+# Alembic migrations cache
+alembic/versions/*.pyc
+alembic/versions/__pycache__/
+
+# Testing / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+nosetests.xml
+coverage.xml
+
+# IDE/editor specific
+.vscode/
+.idea/
+*.swp
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+docker-compose.override.yml
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Locust reports
+*.csv
+*.html
+
+# Build / packaging
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Heroku
+*.log
+.heroku/
