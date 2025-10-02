@@ -12,7 +12,7 @@ class Event(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     description = Column(String)
-    event_time = Column(DateTime, nullable=False)
+    event_time = Column(DateTime(timezone=True), nullable=False)
     event_type = Column(Enum(EventType), nullable=False)
     
     venue_id = Column(Integer, ForeignKey("venue.id"))

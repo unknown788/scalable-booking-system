@@ -6,7 +6,7 @@ from app.services import cache_service
 from app import schemas
 
 from sqlalchemy.orm import Session, joinedload
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 
 from app.models.event import Venue, Event
@@ -102,7 +102,7 @@ def get_events(db: Session, skip: int = 0, limit: int = 100) -> List[Event]:
         db.query(Event)
         # Eager load venue to prevent N+1 queries
         .options(joinedload(Event.venue))
-        .filter(Event.event_time >= datetime.utcnow())
+        .filter(Event.event_time >= datetime.now(timezone.utc))
         .order_by(Event.event_time)
         .offset(skip)
         .limit(limit)
