@@ -27,3 +27,6 @@ prometheus-fastapi-instrumentator==7.0.0
 
 #--- Load Testing ---
 locust==2.25.0
+
+# Harmless package to force cache invalidation
+pytz==2024.1
