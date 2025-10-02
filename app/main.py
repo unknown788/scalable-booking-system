@@ -22,7 +22,7 @@ Instrumentator().instrument(app).expose(app)
 # 2. Add the CORS middleware
 origins = [
     "http://localhost:3000",
-    "https://404by.me", # <--- ADD YOUR LIVE DOMAIN HERE
+    "https://404by.me", # DOMAIN
 ]
 
 
