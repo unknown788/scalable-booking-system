@@ -58,12 +58,14 @@ graph LR
     WorkerService -- Consume Task --> Queue
     WorkerService -- Read --> Database
 
-    style Frontend fill:#D6EAF8,stroke:#3498DB
-    style APIService fill:#D5F5E3,stroke:#2ECC71
-    style WorkerService fill:#E8DAEF,stroke:#8E44AD
-    style Queue fill:#FCF3CF,stroke:#F39C12
-    style Cache fill:#FADBD8,stroke:#E74C3C
-    style Database fill:#FDEDEC,stroke:#E74C3C
+    %% --- Style Definitions ---
+    %% Added 'color:#333' for better text readability in light mode
+    style Frontend fill:#D6EAF8,stroke:#3498DB,color:#333
+    style APIService fill:#D5F5E3,stroke:#2ECC71,color:#333
+    style WorkerService fill:#E8DAEF,stroke:#8E44AD,color:#333
+    style Queue fill:#FCF3CF,stroke:#F39C12,color:#333
+    style Cache fill:#FADBD8,stroke:#E74C3C,color:#333
+    style Database fill:#FDEDEC,stroke:#E74C3C,color:#333
 ```
 
 1.  **Frontend (Next.js on Vercel):** The user interface, responsible for displaying information and capturing user input. Communicates with the Backend API via HTTPS REST calls.
