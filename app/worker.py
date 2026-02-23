@@ -53,8 +53,8 @@ def _send_via_mailpit(booking_id: int, user_email: str) -> None:
         s.send_message(msg)
 
 
-@celery_app.task(acks_late=True)
-def send_booking_confirmation(booking_id: int, user_email: str) -> str:
+@celery_app.task(acks_late=True, ignore_result=True)
+def send_booking_confirmation(booking_id: int, user_email: str) -> None:
     """
     Celery task: sends a booking confirmation email.
     Routes to Resend API (ENVIRONMENT=production) or Mailpit (development).
@@ -69,5 +69,3 @@ def send_booking_confirmation(booking_id: int, user_email: str) -> str:
     except Exception as exc:
         logger.error(f"Email failed  booking_id={booking_id}  error={exc}")
         raise  # re-raise → Celery marks task FAILED; retries via broker
-
-    return f"Confirmation for booking {booking_id} processed."

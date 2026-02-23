@@ -5,7 +5,16 @@ import os
 celery_app = Celery(
     "worker",
     broker=os.environ.get("CELERY_BROKER_URL", os.environ.get("RABBITMQ_URL")),
-    backend=os.environ.get("CELERY_RESULT_BACKEND_URL", os.environ.get("REDIS_URL")),
+    # No result backend — all tasks are fire-and-forget (email notifications).
+    # Setting backend=None stops Celery from opening a Redis pub/sub connection
+    # on every .delay() call, which was causing 500s on the web dyno.
+    backend=None,
+)
+
+celery_app.conf.update(
+    task_ignore_result=True,          # never store task results
+    task_store_errors_even_if_ignored=False,
+    broker_connection_retry_on_startup=True,  # suppress Celery 6.0 deprecation warning
 )
 
 # No custom task_routes — tasks go to the default "celery" queue
