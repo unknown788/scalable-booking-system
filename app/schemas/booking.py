@@ -1,12 +1,13 @@
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime
+from decimal import Decimal
 from .event import Seat  # Re-use the Seat schema we already created
 
 
 class Ticket(BaseModel):
     id: int
-    price: float
+    price: Decimal  # matches Numeric(10,2) — Pydantic serializes Decimal correctly as number
     seat: Seat
 
     class Config:

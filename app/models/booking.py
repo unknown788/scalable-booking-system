@@ -49,3 +49,9 @@ class Ticket(Base):
     __table_args__ = (
         UniqueConstraint("event_id", "seat_id", name="_event_seat_uc"),
     )
+
+    # Add this method to set the status when creating a Booking
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if 'status' not in kwargs:
+            self.status = BookingStatus.confirmed

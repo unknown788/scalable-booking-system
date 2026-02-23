@@ -14,7 +14,7 @@ alembic==1.13.2
 
 #--- Security & Authentication ---
 passlib[bcrypt]==1.7.4
-argon2-cffi==23.1.0  
+argon2-cffi==23.1.0
 python-jose[cryptography]==3.3.0
 
 #--- Asynchronous Tasks & Caching ---
@@ -22,11 +22,12 @@ celery==5.4.0
 pika>=1.0.0
 redis==5.0.7
 
-#--- Observability & Monitoring ---
-prometheus-fastapi-instrumentator==7.0.0
-
-#--- Load Testing ---
-locust==2.25.0
+#--- Testing ---
+pytest==8.3.3
+pytest-asyncio==0.23.8
+anyio==4.3.0
+httpx==0.27.0
+locust==2.32.3
 
 # Harmless package to force cache invalidation
 pytz==2024.1

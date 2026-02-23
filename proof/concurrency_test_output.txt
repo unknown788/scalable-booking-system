@@ -1,0 +1,43 @@
+============================= test session starts ==============================
+collecting ... collected 1 item
+
+
+============================================================
+  CONCURRENCY PROOF: 50 users → 1 seat
+  Event ID : 24
+  Seat  ID : 1378
+============================================================
+
+  RESULTS:
+    ✅  HTTP 200 — Booking confirmed :   1
+    🔒  HTTP 409 — Seat already taken:  49
+    ❌  Unexpected status codes      :   0
+
+  DB INTEGRITY CHECK:
+    Ticket rows in DB for seat 1378: 1 (expected: 1)
+============================================================
+
+  ✅ PROOF PASSED
+     50 concurrent users fired at 1 seat
+     → Exactly 1 booking confirmed
+     → Zero double-bookings in database
+PASSED
+
+=============================== warnings summary ===============================
+../usr/local/lib/python3.9/site-packages/pydantic/_internal/_config.py:295
+../usr/local/lib/python3.9/site-packages/pydantic/_internal/_config.py:295
+../usr/local/lib/python3.9/site-packages/pydantic/_internal/_config.py:295
+../usr/local/lib/python3.9/site-packages/pydantic/_internal/_config.py:295
+../usr/local/lib/python3.9/site-packages/pydantic/_internal/_config.py:295
+../usr/local/lib/python3.9/site-packages/pydantic/_internal/_config.py:295
+../usr/local/lib/python3.9/site-packages/pydantic/_internal/_config.py:295
+../usr/local/lib/python3.9/site-packages/pydantic/_internal/_config.py:295
+  /usr/local/lib/python3.9/site-packages/pydantic/_internal/_config.py:295: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.10/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/test_concurrency.py::test_concurrent_booking_only_one_succeeds
+  /usr/local/lib/python3.9/site-packages/passlib/handlers/argon2.py:716: DeprecationWarning: Accessing argon2.__version__ is deprecated and will be removed in a future release. Use importlib.metadata directly to query for structlog's packaging metadata.
+    _argon2_cffi.__version__, max_version)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 1 passed, 9 warnings in 16.03s ========================

@@ -1,12 +1,10 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
-from loguru import logger 
-from app.db.cache import redis_client  
-from app.services import cache_service  # Import cache service
+from loguru import logger
 
+from app.services import cache_service
 from app.worker import send_booking_confirmation
-
 from app import models, schemas
 from app.crud import crud_event, crud_user
 
@@ -22,17 +20,17 @@ def create_new_booking(
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    # For now, let's set a static price. You could extend this to be dynamic.
+    user = crud_user.get_user(db, user_id=user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     ticket_price = 150.00
 
-
-    user = crud_user.get_user(db, user_id=user_id)
-    # We use a transaction to ensure atomicity
     try:
         # 1. Create the parent Booking record
         db_booking = models.Booking(user_id=user_id)
         db.add(db_booking)
-        db.flush()  # Use flush to get the db_booking.id before committing
+        db.flush()  # Gets booking.id without committing
 
         # 2. Create a Ticket for each requested seat
         for seat_id in booking_in.seat_ids:
@@ -44,23 +42,56 @@ def create_new_booking(
             )
             db.add(db_ticket)
 
-        # 3. Commit the transaction
+        # 3. Commit — UniqueConstraint(_event_seat_uc) enforced HERE by PostgreSQL
         db.commit()
-        db.refresh(db_booking)
 
+        # 4. Re-query with joinedload to fully populate tickets→seat for Pydantic
+        #    db.refresh() only reloads top-level columns — it does NOT load relationships
+        db_booking = (
+            db.query(models.Booking)
+            .options(
+                joinedload(models.Booking.tickets)
+                .joinedload(models.Ticket.seat)
+            )
+            .filter(models.Booking.id == db_booking.id)
+            .first()
+        )
 
+        # 5. Invalidate the availability cache for this event
         cache_service.delete_from_cache(f"availability:{booking_in.event_id}")
 
+        # 6. Fire async email confirmation via Celery/RabbitMQ
         send_booking_confirmation.delay(db_booking.id, user.email)
+
+        logger.info(
+            f"Booking {db_booking.id} created for user {user_id}, "
+            f"event {booking_in.event_id}, seats {booking_in.seat_ids}"
+        )
         return db_booking
 
     except IntegrityError:
-        # This block executes if the UniqueConstraint on (event_id, seat_id) fails
         db.rollback()
         logger.warning(
-            f"Booking conflict for event {booking_in.event_id} and seats {booking_in.seat_ids}")
-
+            f"Booking conflict: user {user_id} tried to book "
+            f"seats {booking_in.seat_ids} for event {booking_in.event_id} — already taken"
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="One or more of the selected seats are already booked.",
         )
+
+
+def get_my_bookings(db: Session, *, user_id: int) -> list[models.Booking]:
+    """
+    Returns all bookings for a given user with tickets→seat eagerly loaded.
+    """
+    return (
+        db.query(models.Booking)
+        .options(
+            joinedload(models.Booking.tickets)
+            .joinedload(models.Ticket.seat)
+        )
+        .filter(models.Booking.user_id == user_id)
+        .order_by(models.Booking.booking_time.desc())
+        .all()
+    )

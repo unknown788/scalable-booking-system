@@ -14,5 +14,10 @@ if settings.ENVIRONMENT == "production":
 redis_client = redis.Redis.from_url(
     settings.REDIS_URL,
     decode_responses=True,
+    # Connection pool — reuses connections instead of opening a new one per call
+    # max_connections=20 means up to 20 simultaneous Redis ops before queuing
+    max_connections=20,
+    socket_connect_timeout=2,   # fail fast if Redis is unreachable — don't hang
+    socket_timeout=2,           # fail fast on reads/writes too
     **ssl_kwargs
 )
