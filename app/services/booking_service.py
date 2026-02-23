@@ -7,6 +7,7 @@ from app.services import cache_service
 from app.worker import send_booking_confirmation
 from app import models, schemas
 from app.crud import crud_event, crud_user
+from app.models.event import Event
 
 
 def create_new_booking(
@@ -45,13 +46,12 @@ def create_new_booking(
         # 3. Commit — UniqueConstraint(_event_seat_uc) enforced HERE by PostgreSQL
         db.commit()
 
-        # 4. Re-query with joinedload to fully populate tickets→seat for Pydantic
-        #    db.refresh() only reloads top-level columns — it does NOT load relationships
+        # 4. Re-query with joinedload to fully populate tickets→seat + tickets→event→venue
         db_booking = (
             db.query(models.Booking)
             .options(
-                joinedload(models.Booking.tickets)
-                .joinedload(models.Ticket.seat)
+                joinedload(models.Booking.tickets).joinedload(models.Ticket.seat),
+                joinedload(models.Booking.tickets).joinedload(models.Ticket.event).joinedload(models.Event.venue),
             )
             .filter(models.Booking.id == db_booking.id)
             .first()
@@ -83,13 +83,13 @@ def create_new_booking(
 
 def get_my_bookings(db: Session, *, user_id: int) -> list[models.Booking]:
     """
-    Returns all bookings for a given user with tickets→seat eagerly loaded.
+    Returns all bookings for a given user with tickets→seat + tickets→event→venue eagerly loaded.
     """
     return (
         db.query(models.Booking)
         .options(
-            joinedload(models.Booking.tickets)
-            .joinedload(models.Ticket.seat)
+            joinedload(models.Booking.tickets).joinedload(models.Ticket.seat),
+            joinedload(models.Booking.tickets).joinedload(models.Ticket.event).joinedload(models.Event.venue),
         )
         .filter(models.Booking.user_id == user_id)
         .order_by(models.Booking.booking_time.desc())

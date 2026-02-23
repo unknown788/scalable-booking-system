@@ -28,10 +28,13 @@ def create_venue(db: Session, venue_in: VenueCreate) -> Venue:
 
         seats = []
         for row_num in range(venue_in.rows):
-            row_letter = chr(65 + row_num)  # 0→"A", 1→"B", ...
+            if row_num < 26:
+                row_label = chr(65 + row_num)          # A–Z
+            else:
+                row_label = "A" + chr(65 + row_num - 26)  # AA, AB, … for rows 27+
             for col_num in range(1, venue_in.cols + 1):
                 seats.append(Seat(
-                    row=row_letter,
+                    row=row_label,
                     number=col_num,
                     venue_id=venue.id,
                 ))
@@ -154,7 +157,12 @@ def _build_and_cache_availability(db: Session, event_id: int) -> dict:
     """
     event = get_event(db, event_id)  # raises 404 if not found
 
-    all_seats = db.query(Seat).filter(Seat.venue_id == event.venue_id).all()
+    all_seats = (
+        db.query(Seat)
+        .filter(Seat.venue_id == event.venue_id)
+        .order_by(Seat.row, Seat.number)
+        .all()
+    )
 
     # Set comprehension for O(1) lookup — single optimised query
     booked_seat_ids = {
