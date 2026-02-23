@@ -13,9 +13,9 @@ class Settings(BaseSettings):
     REDIS_URL: str
     ENVIRONMENT: str = "development"
 
-    # Email (SendGrid in production, unused in development)
-    SENDGRID_API_KEY: str = ""
-    EMAIL_FROM: str = "booking-system@example.com"
+    # Email (Resend in production, unused in development)
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM: str = "Booking System <onboarding@resend.dev>"
 
     class Config:
         case_sensitive = True
