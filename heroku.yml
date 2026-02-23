@@ -2,10 +2,6 @@
 build:
   docker:
     web: Dockerfile
-    worker: Dockerfile
+    worker: Dockerfile.worker
   config:
     PYTHONPATH: .
-run:
-  web: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-  worker: celery -A app.worker worker --loglevel=info
-  

@@ -17,3 +17,6 @@ COPY . /app
 
 # Expose the port the app runs on
 EXPOSE 8000
+
+# Shell form so $PORT is expanded at runtime (Heroku sets $PORT dynamically)
+CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT
