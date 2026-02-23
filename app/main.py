@@ -11,15 +11,21 @@ logger.add(sys.stdout, serialize=True, enqueue=True)
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
-origins = [
+# Base origins always allowed
+_base_origins = [
     "http://localhost:3000",
     "https://404by.me",
     "https://booking.404by.me",
 ]
 
+# CORS_ORIGINS env var: comma-separated list of extra origins from Heroku config
+_extra = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+origins = list(dict.fromkeys(_base_origins + _extra))  # deduplicate, preserve order
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",   # all Vercel preview deploys
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

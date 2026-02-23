@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "booking-system@example.com"
 
+    # Extra CORS origins (comma-separated), injected via Heroku config var
+    CORS_ORIGINS: str = ""
+
     class Config:
         case_sensitive = True
         env_file = ".env"
