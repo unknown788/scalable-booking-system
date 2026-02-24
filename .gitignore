@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.pyc
+*.pyd
+*$py.class
 *.log
 
 # Virtual environment
@@ -10,6 +13,10 @@ venv/
 .env
 *.env
 .env.*
+
+# Personal / non-project files
+interview-prep/
+seed_prod.py
 
 # Byte-compiled / optimized files
 *.py[cod]
