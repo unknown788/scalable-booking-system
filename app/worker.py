@@ -13,7 +13,14 @@ ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
 
 
 def _send_via_resend(booking_id: int, user_email: str) -> None:
-    """Send via Resend API (resend SDK v2.x, Python >= 3.10)."""
+    """Send via Resend API (resend SDK v2.x, Python >= 3.10).
+
+    Resend's free tier (no verified domain) only allows sending to the
+    account-owner's email address.  We route all confirmation emails to
+    RESEND_TO_OVERRIDE when that env-var is set, so the pipeline still
+    works end-to-end without a verified domain.  Remove the override once
+    you verify a domain in the Resend dashboard.
+    """
     import resend  # lazy import so missing SDK doesn't crash dev
 
     api_key = os.environ.get("RESEND_API_KEY", "")
@@ -21,16 +28,23 @@ def _send_via_resend(booking_id: int, user_email: str) -> None:
         raise RuntimeError("RESEND_API_KEY is not set")
 
     resend.api_key = api_key
+
+    # Resend sandbox: only the account owner's address is allowed.
+    # RESEND_TO_OVERRIDE lets us route all emails there until a domain
+    # is verified.  Falls back to the real user email when not set.
+    to_address = os.environ.get("RESEND_TO_OVERRIDE") or user_email
+
     params: resend.Emails.SendParams = {
         "from": os.environ.get("EMAIL_FROM", "onboarding@resend.dev"),
-        "to": [user_email],
+        "to": [to_address],
         "subject": f"Booking Confirmation: #{booking_id}",
         "text": (
-            "Hello!\n\n"
-            "Thank you for your booking on the Scalable Booking System.\n"
-            f"Your Booking ID is: #{booking_id}\n\n"
-            "We look forward to seeing you!\n\n"
-            "— The Booking Team"
+            f"Hello!\n\n"
+            f"Thank you for your booking on the Scalable Booking System.\n"
+            f"Your Booking ID is: #{booking_id}\n"
+            f"Booked by: {user_email}\n\n"
+            f"We look forward to seeing you!\n\n"
+            f"— The Booking Team"
         ),
     }
     resend.Emails.send(params)
